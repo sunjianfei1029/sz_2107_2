@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <!--引入外部配置文件-->
+    <properties resource="db.properties" />
+
+    <!--全局配置-->
+    <settings>
+        <!--将执行的SQL及查询结果输出到控制台-->
+        <setting name="logImpl" value="STDOUT_LOGGING"/>
+        <!--开启延迟加载策略-->
+        <setting name="lazyLoadingEnabled" value="true" />
+        <!--lazyLoadTriggerMethods	指定对象的哪些方法触发一次延迟加载。用逗号分隔的方法列表.
+        默认值是：equals,clone,hashCode,toString -->
+        <setting name="lazyLoadTriggerMethods" value="" />
+
+        <!--开启驼峰命名自动映射：从数据库的经典命名table_name,自动映射类中属性 tableName-->
+        <setting name="mapUnderscoreToCamelCase" value="true" />
+    </settings>
+
+    <!--类型别名-->
+    <typeAliases>
+        <!--单独为指定的类型起别名-->
+        <!--<typeAlias type="com.bjpowernode.pojo.Product" alias="product" />-->
+
+        <!--批量起别名，别名是类名，首字母大小写都可以-->
+        <package name="com.bjpowernode.pojo" />
+    </typeAliases>
+
+    <!--配置环境（数据源）-->
+    <environments default="development">
+        <environment id="development">
+            <!--事务管理器-->
+            <transactionManager type="JDBC"/>
+            <!--带连接池的数据源-->
+            <dataSource type="POOLED">
+                <property name="driver" value="${db.driver}"/>
+                <property name="url" value="${db.url}"/>
+                <property name="username" value="${db.username}"/>
+                <property name="password" value="${db.password}"/>
+            </dataSource>
+        </environment>
+    </environments>
+
+    <!--注册映射文件-->
+    <mappers>
+        <!--<mapper resource="ProductMapper.xml" />
+        <mapper resource="CommonMapper.xml" />
+        <mapper resource="TypeMapper.xml" />-->
+        <package name="com.bjpowernode.crm.mapper" />
+    </mappers>
+</configuration>

@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.bjpowernode.crm.mapper.ProductMapper">
+
+    <!--开启当前命名空间的二级缓存！
+        二级缓存特点：
+        0. 二级缓存的存储介质是磁盘！
+        1. 是以命名空间为单位进行管理的，不同命名空间的二级缓存互不影响！
+        2. 二级缓存的生命周期：
+            创建时机：sqlSession关闭时，从开启到关闭之间所有查询的数据都会序列化到磁盘中，作为缓存。
+                注意：在关闭之前，一级缓存生效！
+            存活时机：sqlSession关闭 到 任意更新操作之间
+            销毁时机：当前命名空间下任意更新（增删改）的执行，都会导致当前命名空间下的所有二级缓存数据被清空！
+        3. 被缓存的数据必须实现序列化接口 java.io.Serializable
+
+        4. 关联(多表)查询很容易造成脏数据！
+            1).执行SQL:select p.name,t.name from product p left join type t on p.tid=t.id where p.id=1
+                结果：iPhone  手机数码
+            2).关闭sqlSession，让数据存储到二级缓存！
+                二级缓存中储存的数据为：iPhone  手机数码
+            3).修改id为1的商品对应的类型的名字！
+                将  手机数码  修改为  手机
+            4).执行SQL:select p.name,t.name from product p left join type t on p.tid=t.id where p.id=1
+                结果：iPhone  手机数据
+
+             为何？第3步会清空类别命名空间下的二级缓存，跟当前命名空间没关系！
+             如何解决：连接查询不使用二级缓存！
+
+         5.在开启延迟加载之后，嵌套查询也不可以使用二级缓存！会导致异常！
+            SQLSession关闭之前没有触发延迟加载，关闭之后存储到二级缓存中的数据不包含延迟属性！
+            再次去获取数据时，此时反序列化回来的对象中，连接已经因超时而导致不可用，导致延迟加载触发时，查询无法进行！
+
+          总结：对于多表查询，不管是连接查询，还是嵌套查询，都不可用使用二级缓存，二级缓存最适合单表查询操作！
+    -->
+    <cache />
+
+    <select id="getById" resultType="com.bjpowernode.pojo.Product">
+        select * from product where id=#{id}
+    </select>
+
+    <!--
+        resultType: 指的是将查询结果中的 一条数据！！！    转换成什么类型
+        查询必须指定resultType，而增删改不需要指定，因为返回值类型必然是int类型（受影响行数）
+    -->
+    <select id="getAll" resultType="com.bjpowernode.pojo.Product">
+        select * from product
+    </select>
+
+    <select id="getCount" resultType="int">
+        select count(*) from product
+    </select>
+
+    <insert id="save">
+        insert into product values(
+            #{id},
+            #{name},
+            #{price},
+            #{num},
+            #{description}
+        )
+    </insert>
+    <insert id="save2">
+        insert into product values(
+            #{id},
+            #{name},
+            #{price},
+            #{num},
+            #{description}
+        )
+    </insert>
+
+    <!--
+        当查询出来的字段名（和表中的字段名不一定一样！可以起别名）和类中的属性名不一致时，会导致对应的属性值为null，解决办法：
+            1. 为字段起别名，别名和类中的属性名一致！
+    -->
+    <select id="getById2" resultType="com.bjpowernode.pojo.Product">
+        select
+        id,
+        name as name,
+        price,
+        num,
+        description
+        from product where id=#{id}
+    </select>
+
+    <!--手动映射查询结果中的字段名和type类型中的属性之间的关系（ORM体现！）-->
+    <resultMap id="productMap" type="com.bjpowernode.pojo.Product">
+        <!--
+            property：永远指的是类中属性名
+            column: 查询结果中的字段名（不一定和表中的字段名一致）
+
+            主键字段使用id标签来映射
+        -->
+        <id property="id" column="id" />
+        <result property="name" column="name" />
+        <result property="price" column="price" />
+        <result property="num" column="num" />
+        <result property="description" column="description" />
+    </resultMap>
+    
+    <!--2. 不使用resultType，换成resultMap(手动映射类中属性和查找字段的映射关系)-->
+    <select id="getById3" resultMap="productMap">
+        select * from product where id=#{id}
+    </select>
+
+    <select id="getById4" resultMap="productMap">
+        select * from product where id=#{id} and name=#{name}
+    </select>
+
+    <select id="getById5" resultMap="productMap">
+        select * from product where id=#{id} and name=#{pro.name}
+    </select>
+
+    <!--concat函数：将多个值连接在一起，组成一个新的字符串
+    concat('%', #{name}, '%')：包含name
+    concat(#{name}, '%')：name开头
+    concat('%', #{name})：name结尾
+    -->
+    <select id="getByName" resultMap="productMap">
+        select * from product where name like concat('%', #{name}, '%')
+    </select>
+    <!--与上等效-->
+    <select id="getByName2" resultMap="productMap">
+        select * from product where name like "%" #{name} '%'
+    </select>
+
+    <select id="getList" resultMap="productMap">
+        select * from product
+        <where>
+            <if test="name!=null and name!=''">
+                and name like '%' #{name} '%'
+            </if>
+            <if test="description!=null and description!=''">
+                and description like '%' #{description} '%'
+            </if>
+        </where>
+    </select>
+
+    <!--
+        collection: 不使用@Param注解起别名的情况下
+            数组：array
+            List: list
+            Map: _parameter
+        item: 遍历的具体元素别名
+        open: 遍历开始的拼接符
+        close: 遍历结束的拼接符
+        separator: 元素与元素之间的分隔符
+    -->
+    <delete id="delete">
+        delete from product where id in
+        <foreach collection="array" item="iddddd" open="(" close=")" separator=",">
+          #{iddddd}
+        </foreach>
+    </delete>
+
+    <insert id="saveList">
+        insert into product values
+        <foreach collection="list" item="p" separator=",">
+            (
+                #{p.id},
+                #{p.name},
+                #{p.price},
+                #{p.num},
+                #{p.description}
+            )
+        </foreach>
+    </insert>
+    
+    <resultMap id="productMap2" type="com.bjpowernode.pojo.Product">
+        <id property="id" column="id" />
+        <result property="name" column="name" />
+        <result property="price" column="price" />
+        <result property="num" column="num" />
+        <result property="description" column="description" />
+        <result property="tid" column="tid" />
+
+        <!--
+            association: 映射pojo类型(非简单类型和非集合类型)中的属性和查询字段的关系
+        -->
+        <association property="type">
+            <id property="id" column="tid" />
+            <result property="name" column="t_name" />
+        </association>
+    </resultMap>
+    <select id="getWithType" resultMap="productMap2">
+        select t.name t_name,p.* from type t join product p on t.id=p.tid where p.id=1
+    </select>
+
+    <select id="getByTypeId" resultType="com.bjpowernode.pojo.Product">
+        select * from product where tid=#{tid}
+    </select>
+    
+    <resultMap id="productMap3" type="Product">
+        <id property="id" column="id" />
+        <result property="name" column="name" />
+        <result property="price" column="price" />
+        <result property="num" column="num" />
+        <result property="description" column="description" />
+        <result property="tid" column="tid" />
+
+        <!--分步查询：第2次查询
+            column: 该次查询需要用到第1次查询中的哪个字段作为第2次查询的条件
+            select: 该次查询使用哪个命名空间下的哪个方法，格式：命名空间.方法名
+        -->
+        <association property="type" column="tid"
+                     select="com.bjpowernode.crm.mapper.TypeMapper.get" />
+    </resultMap>
+    
+    <!--分步查询：第1次-->
+    <select id="getWithType2" resultMap="productMap3">
+        select * from product where id=#{id}
+    </select>
+</mapper>

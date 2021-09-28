@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.bjpowernode.crm.mapper.TypeMapper">
+    <resultMap id="typeMap" type="com.bjpowernode.pojo.Type">
+        <id property="id" column="tid"/>
+        <result property="name" column="t_name"/>
+        <!--
+            collection标签：映射集合类型（中的泛型）和查询字段之间的关系
+            property：集合对应的属性名
+            ofType: products集合中的泛型
+        -->
+        <collection property="products" ofType="com.bjpowernode.pojo.Product">
+            <!--
+                property: ofType类型中的属性名，column:查询字段名
+            -->
+            <id property="id" column="id"/>
+            <result property="name" column="name"/>
+            <result property="price" column="price"/>
+            <result property="num" column="num"/>
+            <result property="tid" column="tid"/>
+            <result property="description" column="description"/>
+        </collection>
+    </resultMap>
+
+    <select id="getWithProducts" resultMap="typeMap">
+      select t.name t_name,p.* from type t join product p on t.id=p.tid where t.id=#{id}
+    </select>
+
+    <select id="get" resultType="com.bjpowernode.pojo.Type">
+        select * from type where id=#{id}
+    </select>
+    
+    <resultMap id="typeMap2" type="com.bjpowernode.pojo.Type">
+        <id property="id" column="id" />
+        <result property="name" column="name" />
+
+        <!--第2次查询
+            column: 该次查询需要用到第1次查询中的哪个字段作为第2次查询的条件
+            select: 该次查询使用哪个命名空间下的哪个方法，格式：命名空间.方法名
+        -->
+        <collection property="products" column="id"
+                    select="com.bjpowernode.crm.mapper.ProductMapper.getByTypeId" />
+    </resultMap>
+
+    <!--分步查询：第1次-->
+    <select id="getWithProducts2" resultMap="typeMap2">
+        select * from type where id=#{id}
+    </select>
+</mapper>

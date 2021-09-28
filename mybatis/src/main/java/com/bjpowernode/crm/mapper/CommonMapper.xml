@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.bjpowernode.crm.mapper.CommonMapper">
+    <!--
+        当使用foreach遍历map时，index属性给 key 定义别名，item 给值定义别名
+    -->
+    <insert id="save">
+        insert into ${tableName}
+
+        <foreach collection="data" index="key" open="(" close=")" separator=",">
+            ${key}
+        </foreach>
+
+        values
+
+        <foreach collection="data" item="value" open="(" close=")" separator=",">
+            #{value}
+        </foreach>
+    </insert>
+
+    <delete id="delete">
+        delete from ${tableName} where id in
+        <foreach collection="ids" open="(" close=")" separator="," item="id">
+            #{id}
+        </foreach>
+    </delete>
+
+    <update id="update">
+        update ${tableName}
+          set
+            <foreach collection="data" index="key" item="value" separator=",">
+                ${key}=#{value}
+            </foreach>
+        where id=#{data.id}
+    </update>
+
+    <select id="get" resultType="map">
+        select * from ${tableName} where id=#{id}
+    </select>
+    
+    <update id="saveOrUpdate">
+        <choose>
+            <when test="data.id == null or data.id==''">
+                insert into ${tableName}
+
+                <foreach collection="data" index="key" open="(" close=")" separator=",">
+                    ${key}
+                </foreach>
+
+                values
+
+                <foreach collection="data" item="value" open="(" close=")" separator=",">
+                    #{value}
+                </foreach>
+            </when>
+            <otherwise>
+                update ${tableName}
+                set
+                <foreach collection="data" index="key" item="value" separator=",">
+                    ${key}=#{value}
+                </foreach>
+                where id=#{data.id}
+            </otherwise>
+        </choose>
+    </update>
+</mapper>
